@@ -1,5 +1,5 @@
 import tkinter as tk
-from fluent_tkinter import (
+from fltkinter import (
     FluentButton, FluentTextField, FluentCheckbox, FluentRadio, FluentLabel,
     FluentDropdown, FluentProgressBar, FluentSlider, FluentToggleSwitch,
     FluentChoiceGroup, FluentPanel, FluentMessageBar, FluentCommandBar,
