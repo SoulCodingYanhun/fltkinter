@@ -1,6 +1,8 @@
 import tkinter as tk
 from .base import FluentWidget
 from ..theme_manager import theme_manager
+from ..utils import create_round_rectangle, animate
+from ..acrylic import AcrylicFrame
 
 class FluentButton(FluentWidget):
     """
@@ -25,42 +27,72 @@ class FluentButton(FluentWidget):
             master: The parent widget.
             **kwargs: Additional keyword arguments to pass to the underlying Button widget.
         """
-        super().__init__(master, tk.Button, **kwargs)
-        self.widget.bind("<Enter>", self.on_enter)
-        self.widget.bind("<Leave>", self.on_leave)
-        self.widget.bind("<Button-1>", self.on_click)
-        self.widget.bind("<ButtonRelease-1>", self.on_release)
+        self.acrylic_frame = AcrylicFrame(master, theme_manager.colors.PRIMARY)
+        super().__init__(self.acrylic_frame, tk.Canvas, **kwargs)
+        self.text = kwargs.get('text', '')
+        self.command = kwargs.get('command', None)
+        self.state = tk.NORMAL
+        self.create_button()
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        self.bind("<Button-1>", self.on_click)
+        self.bind("<ButtonRelease-1>", self.on_release)
         theme_manager.register_observer(self)
+
+    def create_button(self):
+        self.widget.config(width=120, height=40, bg='systemtransparent')
+        self.shape = create_round_rectangle(self.widget, 10, 10, 110, 30, radius=10, fill='')
+        self.text_item = self.widget.create_text(60, 20, text=self.text, fill=theme_manager.colors.BACKGROUND)
+        self.widget.pack(fill=tk.BOTH, expand=True)
 
     def update_style(self):
         """Update the button's style based on the current theme."""
-        self.widget.configure(
-            bg=theme_manager.colors.PRIMARY,
-            fg=theme_manager.colors.BACKGROUND,
-            activebackground=theme_manager.colors.SECONDARY,
-            activeforeground=theme_manager.colors.BACKGROUND,
-            relief=tk.FLAT,
-            padx=10,
-            pady=5,
-            font=("Segoe UI", 10),
-            cursor="hand2"
-        )
+        self.acrylic_frame.bg_color = theme_manager.colors.PRIMARY
+        self.acrylic_frame.on_resize(None)
+        self.widget.itemconfig(self.text_item, fill=theme_manager.colors.BACKGROUND)
 
     def on_enter(self, e):
-        self.widget['background'] = theme_manager.colors.SECONDARY
+        if self.state == tk.NORMAL:
+            animate(self.acrylic_frame, 'bg_color', 
+                    self.acrylic_frame.bg_color, 
+                    theme_manager.colors.SECONDARY, 
+                    duration=200, 
+                    update_func=self.acrylic_frame.on_resize)
 
     def on_leave(self, e):
-        self.widget['background'] = theme_manager.colors.PRIMARY
+        if self.state == tk.NORMAL:
+            animate(self.acrylic_frame, 'bg_color', 
+                    self.acrylic_frame.bg_color, 
+                    theme_manager.colors.PRIMARY, 
+                    duration=200, 
+                    update_func=self.acrylic_frame.on_resize)
 
     def on_click(self, e):
-        self.widget['relief'] = tk.SUNKEN
+        if self.state == tk.NORMAL:
+            self.acrylic_frame.bg_color = theme_manager.colors.PRIMARY
+            self.acrylic_frame.on_resize(None)
 
     def on_release(self, e):
-        self.widget['relief'] = tk.FLAT
+        if self.state == tk.NORMAL:
+            self.acrylic_frame.bg_color = theme_manager.colors.SECONDARY
+            self.acrylic_frame.on_resize(None)
+            if self.command:
+                self.command()
 
     def disable(self):
-        self.widget.configure(state=tk.DISABLED, bg=theme_manager.colors.DISABLED)
+        self.state = tk.DISABLED
+        self.acrylic_frame.bg_color = theme_manager.colors.DISABLED
+        self.acrylic_frame.on_resize(None)
 
     def enable(self):
-        self.widget.configure(state=tk.NORMAL)
+        self.state = tk.NORMAL
         self.update_style()
+
+    def pack(self, **kwargs):
+        self.acrylic_frame.pack(**kwargs)
+
+    def grid(self, **kwargs):
+        self.acrylic_frame.grid(**kwargs)
+
+    def place(self, **kwargs):
+        self.acrylic_frame.place(**kwargs)
